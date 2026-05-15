@@ -1,4 +1,4 @@
-# 🚀 QA Engineering: JUnit 5 & Mockito 5 Framework
+# 🚀 QA Engineering: JUnit 5 & Mockito 5
 
 **Autor:** Quispe Luque, Juan Alexis  
 **Carrera:** Ingeniería de Software  
