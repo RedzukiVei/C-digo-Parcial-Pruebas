@@ -15,7 +15,8 @@ Proyecto desarrollado para el **Examen Parcial de Pruebas de Software (Semestre 
 
 * **Lenguaje:** Java 17+
 * **Gestor de Dependencias:** Maven
-* **Frameworks de Testing:** * JUnit 5 (Jupyter)
+* **Frameworks de Testing:** 
+    * JUnit 5 (Jupyter)
     * Mockito 5
 * **Librerías Externas:** Apache Commons Lang3
 
