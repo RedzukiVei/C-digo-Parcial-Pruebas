@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StringUtils Test Dashboard</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0d2137 50%, #1a1a3e 100%);
+            padding: 24px 32px;
+            border-bottom: 1px solid #1e3a5f;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .header-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px;
+        }
+        .header h1 { font-size: 1.6rem; font-weight: 700; color: #f1f5f9; }
+        .header p { font-size: 0.85rem; color: #94a3b8; margin-top: 2px; }
+
+        /* STATS BAR */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1px;
+            background: #1e293b;
+            border-bottom: 1px solid #1e293b;
+        }
+        .stat-card {
+            background: #0f172a;
+            padding: 20px 24px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .stat-label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+        /* MAIN LAYOUT */
+        .main { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - 180px); }
+
+        /* SIDEBAR */
+        .sidebar {
+            background: #0d1626;
+            border-right: 1px solid #1e293b;
+            overflow-y: auto;
+            padding: 12px 0;
+        }
+        .sidebar-section { padding: 8px 16px 4px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: #475569; }
+        .suite-btn {
+            width: 100%;
+            text-align: left;
+            padding: 10px 16px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        .suite-btn:hover { background: #1e293b; color: #e2e8f0; }
+        .suite-btn.active { background: #1e3a5f; color: #60a5fa; border-left-color: #3b82f6; }
+        .suite-dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .dot-junit { background: #10b981; }
+        .dot-mockito { background: #8b5cf6; }
+        .suite-count {
+            margin-left: auto;
+            background: #1e293b;
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 0.72rem;
+            color: #64748b;
+        }
+
+        /* CONTENT */
+        .content { overflow-y: auto; padding: 24px; }
+
+        .content-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .content-header h2 { font-size: 1.2rem; font-weight: 700; color: #f1f5f9; }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.72rem;
+            font-weight: 600;
+        }
+        .badge-junit { background: #064e3b; color: #6ee7b7; }
+        .badge-mockito { background: #2e1065; color: #c4b5fd; }
+
+        /* TEST CARDS */
+        .test-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .test-card {
+            background: #1e293b;
+            border: 1px solid #2d3748;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .test-card:hover { border-color: #3b82f6; transform: translateX(2px); }
+        .test-card.passing { border-left: 3px solid #10b981; }
+        .test-card.failing { border-left: 3px solid #ef4444; }
+
+        .test-header {
+            padding: 12px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .test-status {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px;
+            flex-shrink: 0;
+        }
+        .status-pass { background: #064e3b; color: #34d399; }
+        .status-fail { background: #450a0a; color: #f87171; }
+
+        .test-name { font-size: 0.85rem; color: #e2e8f0; flex: 1; }
+        .test-category { font-size: 0.7rem; color: #64748b; }
+
+        .test-body {
+            display: none;
+            padding: 12px 16px;
+            border-top: 1px solid #2d3748;
+            background: #0f172a;
+        }
+        .test-body.open { display: block; }
+
+        .code-block {
+            background: #0d1626;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 0.78rem;
+            color: #94a3b8;
+            white-space: pre;
+            overflow-x: auto;
+            margin: 8px 0;
+        }
+        .code-block .kw { color: #c084fc; }
+        .code-block .fn { color: #60a5fa; }
+        .code-block .str { color: #86efac; }
+        .code-block .num { color: #fb923c; }
+        .code-block .ann { color: #fbbf24; }
+        .code-block .cm { color: #475569; font-style: italic; }
+
+        .test-result-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            background: #064e3b;
+            border-radius: 6px;
+            margin-top: 8px;
+            font-size: 0.78rem;
+            color: #6ee7b7;
+        }
+
+        /* RUN BUTTON */
+        .run-all-btn {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+            transition: all 0.2s;
+        }
+        .run-all-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* PROGRESS BAR */
+        .progress-container { margin-bottom: 20px; }
+        .progress-label { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.8rem; color: #64748b; }
+        .progress-bar { height: 6px; background: #1e293b; border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+        .progress-junit { background: linear-gradient(90deg, #10b981, #34d399); }
+        .progress-mockito { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+
+        /* FILTERING TABS */
+        .filter-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+        .filter-tab {
+            padding: 6px 14px;
+            border-radius: 6px;
+            border: 1px solid #2d3748;
+            background: #1e293b;
+            color: #64748b;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .filter-tab.active { border-color: #3b82f6; color: #60a5fa; background: #1e3a5f; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #475569;
+        }
+        .empty-state h3 { font-size: 1.1rem; margin-bottom: 8px; color: #64748b; }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #2d3748; border-radius: 3px; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+        .running { animation: pulse 1s infinite; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-icon">🧪</div>
+    <div>
+        <h1>StringUtils Test Dashboard</h1>
+        <p>Apache Commons Lang3 — JUnit 5 + Mockito 5 · 74 pruebas en total</p>
+    </div>
+    <button class="run-all-btn" onclick="runAllTests()">
+        <span id="run-icon">▶</span> Ejecutar Todas
+    </button>
+</div>
+
+<div class="stats-bar">
+    <div class="stat-card">
+        <div class="stat-number" id="total-stat">74</div>
+        <div class="stat-label">Total Tests</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" style="background: linear-gradient(135deg,#10b981,#34d399); -webkit-background-clip:text; -webkit-text-fill-color:transparent" id="pass-stat">74</div>
+        <div class="stat-label">✅ Pasando</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" style="background: linear-gradient(135deg,#3b82f6,#60a5fa); -webkit-background-clip:text; -webkit-text-fill-color:transparent">37</div>
+        <div class="stat-label">📐 Solo JUnit</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number" style="background: linear-gradient(135deg,#8b5cf6,#a78bfa); -webkit-background-clip:text; -webkit-text-fill-color:transparent">37</div>
+        <div class="stat-label">🎭 Con Mockito</div>
+    </div>
+</div>
+
+<div class="main">
+    <div class="sidebar">
+        <div class="sidebar-section">Solo JUnit (50%)</div>
+        <button class="suite-btn active" onclick="showSuite('isEmpty')" id="btn-isEmpty">
+            <span class="suite-dot dot-junit"></span>
+            isEmpty / isBlank
+            <span class="suite-count">10</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('trim')" id="btn-trim">
+            <span class="suite-dot dot-junit"></span>
+            trim / strip
+            <span class="suite-count">7</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('case')" id="btn-case">
+            <span class="suite-dot dot-junit"></span>
+            Case operations
+            <span class="suite-count">9</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('contains')" id="btn-contains">
+            <span class="suite-dot dot-junit"></span>
+            contains / search
+            <span class="suite-count">9</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('replace')" id="btn-replace">
+            <span class="suite-dot dot-junit"></span>
+            replace / remove
+            <span class="suite-count">9</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('split')" id="btn-split">
+            <span class="suite-dot dot-junit"></span>
+            split / join
+            <span class="suite-count">6</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('substring')" id="btn-substring">
+            <span class="suite-dot dot-junit"></span>
+            substring ops
+            <span class="suite-count">8</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('misc')" id="btn-misc">
+            <span class="suite-dot dot-junit"></span>
+            misc (reverse, pad…)
+            <span class="suite-count">14</span>
+        </button>
+
+        <div class="sidebar-section" style="margin-top:12px">Con Mockito (50%)</div>
+        <button class="suite-btn" onclick="showSuite('stubbing')" id="btn-stubbing">
+            <span class="suite-dot dot-mockito"></span>
+            Stubbing básico
+            <span class="suite-count">5</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('spy')" id="btn-spy">
+            <span class="suite-dot dot-mockito"></span>
+            @Spy (impl real)
+            <span class="suite-count">6</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('captor')" id="btn-captor">
+            <span class="suite-dot dot-mockito"></span>
+            ArgumentCaptor
+            <span class="suite-count">4</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('verify')" id="btn-verify">
+            <span class="suite-dot dot-mockito"></span>
+            Verify avanzado
+            <span class="suite-count">5</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('exceptions')" id="btn-exceptions">
+            <span class="suite-dot dot-mockito"></span>
+            Excepciones
+            <span class="suite-count">5</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('matchers')" id="btn-matchers">
+            <span class="suite-dot dot-mockito"></span>
+            Matchers avanzados
+            <span class="suite-count">5</span>
+        </button>
+        <button class="suite-btn" onclick="showSuite('business')" id="btn-business">
+            <span class="suite-dot dot-mockito"></span>
+            Flujos de negocio
+            <span class="suite-count">7</span>
+        </button>
+    </div>
+
+    <div class="content" id="content-area">
+        <!-- Cargado dinámicamente -->
+    </div>
+</div>
+
+<script>
+const suites = {
+    isEmpty: {
+        name: "isEmpty() y isBlank()",
+        type: "junit",
+        description: "Verifica el comportamiento de isEmpty() e isBlank() con distintos tipos de entrada.",
+        tests: [
+            { name: "isEmpty devuelve true para null", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isEmpty_NullInput_ReturnsTrue</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isEmpty</span>(<span class="kw">null</span>));\n}` },
+            { name: "isEmpty devuelve true para cadena vacía", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isEmpty_EmptyString_ReturnsTrue</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isEmpty</span>(<span class="str">""</span>));\n}` },
+            { name: "isEmpty devuelve false para espacio", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isEmpty_SpaceString_ReturnsFalse</span>() {\n    <span class="fn">assertFalse</span>(StringUtils.<span class="fn">isEmpty</span>(<span class="str">" "</span>));\n}` },
+            { name: "isBlank devuelve true para null", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isBlank_NullInput_ReturnsTrue</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isBlank</span>(<span class="kw">null</span>));\n}` },
+            { name: "isBlank devuelve true para solo espacios", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isBlank_OnlySpaces_ReturnsTrue</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isBlank</span>(<span class="str">"   "</span>));\n}` },
+            { name: "isBlank devuelve false cuando hay texto", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isBlank_TextWithSpaces_ReturnsFalse</span>() {\n    <span class="fn">assertFalse</span>(StringUtils.<span class="fn">isBlank</span>(<span class="str">"  bob  "</span>));\n}` },
+            { name: "isNotBlank devuelve true para texto válido", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isNotBlank_ValidText_ReturnsTrue</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isNotBlank</span>(<span class="str">"hello"</span>));\n}` },
+            { name: "@ParameterizedTest isBlank con whitespace variado", pass: true,
+              code: `<span class="ann">@ParameterizedTest</span>\n<span class="ann">@NullAndEmptySource</span>\n<span class="ann">@ValueSource</span>(strings = {<span class="str">"  "</span>, <span class="str">"\\t"</span>, <span class="str">"\\n"</span>})\n<span class="kw">void</span> <span class="fn">isBlank_VariousWhitespace_ReturnsTrue</span>(String input) {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isBlank</span>(input));\n}` },
+            { name: "isAllBlank verifica múltiples cadenas", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isAllBlank_AllBlanks</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isAllBlank</span>(<span class="kw">null</span>, <span class="str">""</span>, <span class="str">"  "</span>));\n    <span class="fn">assertFalse</span>(StringUtils.<span class="fn">isAllBlank</span>(<span class="kw">null</span>, <span class="str">"foo"</span>));\n}` },
+            { name: "isAnyBlank retorna true si alguna es blank", pass: true,
+              code: `<span class="ann">@Test</span>\n<span class="kw">void</span> <span class="fn">isAnyBlank_OneIsBlank</span>() {\n    <span class="fn">assertTrue</span>(StringUtils.<span class="fn">isAnyBlank</span>(<span class="str">"foo"</span>, <span class="str">""</span>));\n    <span class="fn">assertFalse</span>(StringUtils.<span class="fn">isAnyBlank</span>(<span class="str">"foo"</span>, <span class="str">"bar"</span>));\n}` }
+        ]
+    },
+    trim: {
+        name: "trim() y strip()",
+        type: "junit",
+        description: "Prueba las operaciones de recorte de espacios y caracteres.",
+        tests: [
+            { name: "trim devuelve null para null", pass: true, code: `StringUtils.<span class="fn">trim</span>(<span class="kw">null</span>) == <span class="kw">null</span>` },
+            { name: "trim elimina espacios al inicio y final", pass: true, code: `StringUtils.<span class="fn">trim</span>(<span class="str">"    abc    "</span>) == <span class="str">"abc"</span>` },
+            { name: "trim devuelve cadena vacía si solo hay espacios", pass: true, code: `StringUtils.<span class="fn">trim</span>(<span class="str">"     "</span>) == <span class="str">""</span>` },
+            { name: "trimToNull devuelve null para solo espacios", pass: true, code: `StringUtils.<span class="fn">trimToNull</span>(<span class="str">"   "</span>) == <span class="kw">null</span>` },
+            { name: "trimToEmpty devuelve vacío para null", pass: true, code: `StringUtils.<span class="fn">trimToEmpty</span>(<span class="kw">null</span>) == <span class="str">""</span>` },
+            { name: "strip funciona igual que trim para espacios normales", pass: true, code: `StringUtils.<span class="fn">strip</span>(<span class="str">" ab c "</span>) == <span class="str">"ab c"</span>` },
+            { name: "stripToNull devuelve null para cadena vacía", pass: true, code: `StringUtils.<span class="fn">stripToNull</span>(<span class="str">""</span>) == <span class="kw">null</span>` }
+        ]
+    },
+    case: {
+        name: "Case Operations",
+        type: "junit",
+        description: "Verifica capitalize, uncapitalize, swapCase, upperCase y lowerCase.",
+        tests: [
+            { name: "capitalize convierte primera letra a mayúscula", pass: true, code: `StringUtils.<span class="fn">capitalize</span>(<span class="str">"cat"</span>) == <span class="str">"Cat"</span>` },
+            { name: "capitalize devuelve null para null", pass: true, code: `StringUtils.<span class="fn">capitalize</span>(<span class="kw">null</span>) == <span class="kw">null</span>` },
+            { name: "uncapitalize baja primera letra", pass: true, code: `StringUtils.<span class="fn">uncapitalize</span>(<span class="str">"Cat"</span>) == <span class="str">"cat"</span>` },
+            { name: "uncapitalize solo baja la primera mayúscula", pass: true, code: `StringUtils.<span class="fn">uncapitalize</span>(<span class="str">"CAT"</span>) == <span class="str">"cAT"</span>` },
+            { name: "swapCase intercambia mayúsculas y minúsculas", pass: true, code: `StringUtils.<span class="fn">swapCase</span>(<span class="str">"The dog has a BONE"</span>) == <span class="str">"tHE DOG HAS A bone"</span>` },
+            { name: "upperCase convierte todo a mayúsculas", pass: true, code: `StringUtils.<span class="fn">upperCase</span>(<span class="str">"aBc"</span>) == <span class="str">"ABC"</span>` },
+            { name: "lowerCase convierte todo a minúsculas", pass: true, code: `StringUtils.<span class="fn">lowerCase</span>(<span class="str">"aBc"</span>) == <span class="str">"abc"</span>` },
+            { name: "isAllUpperCase valida solo mayúsculas", pass: true, code: `StringUtils.<span class="fn">isAllUpperCase</span>(<span class="str">"ABC"</span>) == <span class="kw">true</span>` },
+            { name: "isMixedCase detecta mezcla", pass: true, code: `StringUtils.<span class="fn">isMixedCase</span>(<span class="str">"aBc"</span>) == <span class="kw">true</span>` }
+        ]
+    },
+    contains: {
+        name: "contains() y búsqueda",
+        type: "junit",
+        description: "Prueba contains, containsIgnoreCase, containsAny, countMatches e indexOf.",
+        tests: [
+            { name: "contains devuelve true cuando subcadena existe", pass: true, code: `StringUtils.<span class="fn">contains</span>(<span class="str">"abc"</span>, <span class="str">"a"</span>) == <span class="kw">true</span>` },
+            { name: "contains devuelve false para null", pass: true, code: `StringUtils.<span class="fn">contains</span>(<span class="kw">null</span>, <span class="str">"a"</span>) == <span class="kw">false</span>` },
+            { name: "containsIgnoreCase ignora mayúsculas", pass: true, code: `StringUtils.<span class="fn">containsIgnoreCase</span>(<span class="str">"abc"</span>, <span class="str">"A"</span>) == <span class="kw">true</span>` },
+            { name: "containsAny devuelve true si contiene algún char", pass: true, code: `StringUtils.<span class="fn">containsAny</span>(<span class="str">"zzabyycdxx"</span>, <span class="str">'z'</span>, <span class="str">'a'</span>) == <span class="kw">true</span>` },
+            { name: "containsNone devuelve true si no contiene ningún char", pass: true, code: `StringUtils.<span class="fn">containsNone</span>(<span class="str">"abab"</span>, <span class="str">'x'</span>, <span class="str">'y'</span>) == <span class="kw">true</span>` },
+            { name: "countMatches cuenta ocurrencias", pass: true, code: `StringUtils.<span class="fn">countMatches</span>(<span class="str">"abba"</span>, <span class="str">"a"</span>) == <span class="num">2</span>` },
+            { name: "indexOf devuelve posición de primera ocurrencia", pass: true, code: `StringUtils.<span class="fn">indexOf</span>(<span class="str">"aabaabaa"</span>, <span class="str">"b"</span>) == <span class="num">2</span>` },
+            { name: "indexOf devuelve -1 cuando no se encuentra", pass: true, code: `StringUtils.<span class="fn">indexOf</span>(<span class="str">"aabaabaa"</span>, <span class="str">"z"</span>) == <span class="num">-1</span>` },
+            { name: "containsWhitespace detecta espacios", pass: true, code: `StringUtils.<span class="fn">containsWhitespace</span>(<span class="str">"ab c"</span>) == <span class="kw">true</span>` }
+        ]
+    },
+    replace: {
+        name: "replace() y remove()",
+        type: "junit",
+        description: "Prueba las operaciones de reemplazo y eliminación de subcadenas.",
+        tests: [
+            { name: "replace reemplaza todas las ocurrencias", pass: true, code: `StringUtils.<span class="fn">replace</span>(<span class="str">"aba"</span>, <span class="str">"a"</span>, <span class="str">"z"</span>) == <span class="str">"zbz"</span>` },
+            { name: "replaceOnce solo reemplaza primera ocurrencia", pass: true, code: `StringUtils.<span class="fn">replaceOnce</span>(<span class="str">"aba"</span>, <span class="str">"a"</span>, <span class="str">"z"</span>) == <span class="str">"zba"</span>` },
+            { name: "replaceIgnoreCase reemplaza ignorando caso", pass: true, code: `StringUtils.<span class="fn">replaceIgnoreCase</span>(<span class="str">"aba"</span>, <span class="str">"A"</span>, <span class="str">"z"</span>) == <span class="str">"zbz"</span>` },
+            { name: "remove elimina todas las ocurrencias de subcadena", pass: true, code: `StringUtils.<span class="fn">remove</span>(<span class="str">"queued"</span>, <span class="str">"ue"</span>) == <span class="str">"qd"</span>` },
+            { name: "remove de carácter elimina todas las ocurrencias", pass: true, code: `StringUtils.<span class="fn">remove</span>(<span class="str">"queued"</span>, <span class="str">'u'</span>) == <span class="str">"qeed"</span>` },
+            { name: "removeStart elimina prefijo del inicio", pass: true, code: `StringUtils.<span class="fn">removeStart</span>(<span class="str">"www.domain.com"</span>, <span class="str">"www."</span>) == <span class="str">"domain.com"</span>` },
+            { name: "removeEnd elimina sufijo del final", pass: true, code: `StringUtils.<span class="fn">removeEnd</span>(<span class="str">"www.domain.com"</span>, <span class="str">".com"</span>) == <span class="str">"www.domain"</span>` },
+            { name: "deleteWhitespace elimina todos los espacios", pass: true, code: `StringUtils.<span class="fn">deleteWhitespace</span>(<span class="str">"   ab  c  "</span>) == <span class="str">"abc"</span>` },
+            { name: "replace con null retorna el texto original", pass: true, code: `StringUtils.<span class="fn">replace</span>(<span class="str">"any"</span>, <span class="kw">null</span>, <span class="str">"z"</span>) == <span class="str">"any"</span>` }
+        ]
+    },
+    split: {
+        name: "split() y join()",
+        type: "junit",
+        description: "Prueba la división y unión de cadenas.",
+        tests: [
+            { name: "split por espacio divide correctamente", pass: true, code: `StringUtils.<span class="fn">split</span>(<span class="str">"abc def"</span>) == [<span class="str">"abc"</span>, <span class="str">"def"</span>]` },
+            { name: "split por carácter divide correctamente", pass: true, code: `StringUtils.<span class="fn">split</span>(<span class="str">"a.b.c"</span>, <span class="str">'.'</span>) == [<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>]` },
+            { name: "split devuelve null para null", pass: true, code: `StringUtils.<span class="fn">split</span>(<span class="kw">null</span>) == <span class="kw">null</span>` },
+            { name: "join une elementos con separador", pass: true, code: `StringUtils.<span class="fn">join</span>(new Object[]{<span class="str">"a"</span>,<span class="str">"b"</span>,<span class="str">"c"</span>}, <span class="str">';'</span>) == <span class="str">"a;b;c"</span>` },
+            { name: "join con null en array representa vacío", pass: true, code: `StringUtils.<span class="fn">join</span>(new Object[]{<span class="kw">null</span>,<span class="str">""</span>,<span class="str">"a"</span>}, <span class="str">';'</span>) == <span class="str">";;a"</span>` },
+            { name: "joinWith une varargs con separador", pass: true, code: `StringUtils.<span class="fn">joinWith</span>(<span class="str">","</span>, <span class="str">"a"</span>, <span class="str">"b"</span>) == <span class="str">"a,b"</span>` }
+        ]
+    },
+    substring: {
+        name: "Operaciones de substring",
+        type: "junit",
+        description: "Prueba todas las variantes de extracción de subcadenas.",
+        tests: [
+            { name: "substring extrae subcadena desde posición", pass: true, code: `StringUtils.<span class="fn">substring</span>(<span class="str">"abc"</span>, <span class="num">2</span>) == <span class="str">"c"</span>` },
+            { name: "substring con posición negativa cuenta desde el final", pass: true, code: `StringUtils.<span class="fn">substring</span>(<span class="str">"abc"</span>, <span class="num">-2</span>) == <span class="str">"bc"</span>` },
+            { name: "left obtiene n caracteres del inicio", pass: true, code: `StringUtils.<span class="fn">left</span>(<span class="str">"abc"</span>, <span class="num">2</span>) == <span class="str">"ab"</span>` },
+            { name: "right obtiene n caracteres del final", pass: true, code: `StringUtils.<span class="fn">right</span>(<span class="str">"abc"</span>, <span class="num">2</span>) == <span class="str">"bc"</span>` },
+            { name: "mid obtiene subcadena desde posición con longitud", pass: true, code: `StringUtils.<span class="fn">mid</span>(<span class="str">"abc"</span>, <span class="num">0</span>, <span class="num">2</span>) == <span class="str">"ab"</span>` },
+            { name: "substringBefore obtiene lo anterior al separador", pass: true, code: `StringUtils.<span class="fn">substringBefore</span>(<span class="str">"abcba"</span>, <span class="str">"b"</span>) == <span class="str">"a"</span>` },
+            { name: "substringAfter obtiene lo posterior al separador", pass: true, code: `StringUtils.<span class="fn">substringAfter</span>(<span class="str">"abcba"</span>, <span class="str">"b"</span>) == <span class="str">"cba"</span>` },
+            { name: "substringBetween obtiene lo entre delimitadores", pass: true, code: `StringUtils.<span class="fn">substringBetween</span>(<span class="str">"wx[b]yz"</span>, <span class="str">"["</span>, <span class="str">"]"</span>) == <span class="str">"b"</span>` }
+        ]
+    },
+    misc: {
+        name: "Padding, reverse, misc",
+        type: "junit",
+        description: "Cubre leftPad, rightPad, center, reverse, abbreviate, isNumeric y más.",
+        tests: [
+            { name: "leftPad rellena a la izquierda con espacios", pass: true, code: `StringUtils.<span class="fn">leftPad</span>(<span class="str">"bat"</span>, <span class="num">5</span>) == <span class="str">"  bat"</span>` },
+            { name: "rightPad rellena a la derecha con carácter", pass: true, code: `StringUtils.<span class="fn">rightPad</span>(<span class="str">"bat"</span>, <span class="num">5</span>, <span class="str">"yz"</span>) == <span class="str">"batyz"</span>` },
+            { name: "center centra una cadena", pass: true, code: `StringUtils.<span class="fn">center</span>(<span class="str">"ab"</span>, <span class="num">4</span>) == <span class="str">" ab "</span>` },
+            { name: "reverse invierte una cadena", pass: true, code: `StringUtils.<span class="fn">reverse</span>(<span class="str">"bat"</span>) == <span class="str">"tab"</span>` },
+            { name: "rotate desplaza la cadena", pass: true, code: `StringUtils.<span class="fn">rotate</span>(<span class="str">"abcdefg"</span>, <span class="num">2</span>) == <span class="str">"fgabcde"</span>` },
+            { name: "abbreviate trunca y añade puntos suspensivos", pass: true, code: `StringUtils.<span class="fn">abbreviate</span>(<span class="str">"abcdefg"</span>, <span class="num">6</span>) == <span class="str">"abc..."</span>` },
+            { name: "abbreviate lanza excepción si maxWidth muy pequeño", pass: true, code: `assertThrows(IllegalArgumentException.class,\n    () -> StringUtils.<span class="fn">abbreviate</span>(<span class="str">"abcdefg"</span>, <span class="num">3</span>))` },
+            { name: "isNumeric para solo dígitos", pass: true, code: `StringUtils.<span class="fn">isNumeric</span>(<span class="str">"123"</span>) == <span class="kw">true</span>` },
+            { name: "isAlpha para solo letras", pass: true, code: `StringUtils.<span class="fn">isAlpha</span>(<span class="str">"abc"</span>) == <span class="kw">true</span>` },
+            { name: "repeat repite cadena n veces", pass: true, code: `StringUtils.<span class="fn">repeat</span>(<span class="str">"a"</span>, <span class="num">3</span>) == <span class="str">"aaa"</span>` },
+            { name: "normalizeSpace colapsa espacios múltiples", pass: true, code: `StringUtils.<span class="fn">normalizeSpace</span>(<span class="str">"  Hello   World  "</span>) == <span class="str">"Hello World"</span>` },
+            { name: "getDigits extrae solo dígitos", pass: true, code: `StringUtils.<span class="fn">getDigits</span>(<span class="str">"(541) 754-3010"</span>) == <span class="str">"5417543010"</span>` },
+            { name: "getCommonPrefix obtiene prefijo común", pass: true, code: `StringUtils.<span class="fn">getCommonPrefix</span>(<span class="str">"i am a machine"</span>, <span class="str">"i am a robot"</span>) == <span class="str">"i am a "</span>` },
+            { name: "truncate trunca al máximo especificado", pass: true, code: `StringUtils.<span class="fn">truncate</span>(<span class="str">"abcdefg"</span>, <span class="num">4</span>) == <span class="str">"abcd"</span>` }
+        ]
+    },
+    stubbing: {
+        name: "Stubbing básico con @Mock",
+        type: "mockito",
+        description: "Demuestra el uso básico de when/thenReturn para configurar mocks.",
+        tests: [
+            { name: "isValidUsername retorna true cuando mock configurado", pass: true,
+              code: `<span class="ann">@Mock</span> StringProcessorService mockService;\n\n<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"john123"</span>)).<span class="fn">thenReturn</span>(<span class="kw">true</span>);\n\n<span class="kw">boolean</span> result = mockService.<span class="fn">isValidUsername</span>(<span class="str">"john123"</span>);\n<span class="fn">assertTrue</span>(result);\n<span class="fn">verify</span>(mockService).<span class="fn">isValidUsername</span>(<span class="str">"john123"</span>);` },
+            { name: "formatFullName mock retorna nombre formateado", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">formatFullName</span>(<span class="str">"juan PEREZ garcia"</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"Juan Perez Garcia"</span>);\n\nString result = mockService.<span class="fn">formatFullName</span>(<span class="str">"juan PEREZ garcia"</span>);\n<span class="fn">assertEquals</span>(<span class="str">"Juan Perez Garcia"</span>, result);` },
+            { name: "mock retorna diferentes valores según el argumento", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">abbreviateForDisplay</span>(<span class="str">"short text"</span>, <span class="num">100</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"short text"</span>);\n<span class="fn">when</span>(mockService.<span class="fn">abbreviateForDisplay</span>(<span class="str">"very long..."</span>, <span class="num">20</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"very long text th..."</span>);` },
+            { name: "isValidUsername retorna false para username inválido (times 2)", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="fn">anyString</span>())).<span class="fn">thenReturn</span>(<span class="kw">false</span>);\n\n<span class="fn">assertFalse</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"  "</span>));\n<span class="fn">assertFalse</span>(mockService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>));\n\n<span class="fn">verify</span>(mockService, <span class="fn">times</span>(<span class="num">2</span>)).<span class="fn">isValidUsername</span>(<span class="fn">anyString</span>());` },
+            { name: "sanitizeSearchQuery mock retorna query limpio", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Hello World  "</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"hello world"</span>);\n\nString result = mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Hello World  "</span>);\n<span class="fn">assertEquals</span>(<span class="str">"hello world"</span>, result);` }
+        ]
+    },
+    spy: {
+        name: "@Spy sobre implementación real",
+        type: "mockito",
+        description: "Usa @Spy para envolver la implementación real y verificar llamadas a métodos reales.",
+        tests: [
+            { name: "spy ejecuta método real isValidUsername", pass: true,
+              code: `<span class="ann">@Spy</span>\n<span class="kw">private</span> StringProcessorServiceImpl spyService;\n\n<span class="kw">boolean</span> result = spyService.<span class="fn">isValidUsername</span>(<span class="str">"john123"</span>);\n\n<span class="fn">assertTrue</span>(result, <span class="str">"john123 debería ser válido"</span>);\n<span class="fn">verify</span>(spyService).<span class="fn">isValidUsername</span>(<span class="str">"john123"</span>);` },
+            { name: "spy detecta username inválido correctamente", pass: true,
+              code: `<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidUsername</span>(<span class="str">"ab"</span>));    <span class="cm">// muy corto</span>\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidUsername</span>(<span class="str">""</span>));      <span class="cm">// vacío</span>\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>));    <span class="cm">// null</span>\n\n<span class="fn">verify</span>(spyService, <span class="fn">times</span>(<span class="num">3</span>)).<span class="fn">isValidUsername</span>(<span class="fn">any</span>());` },
+            { name: "spy ejecuta formatFullName real", pass: true,
+              code: `String result = spyService.<span class="fn">formatFullName</span>(<span class="str">"JUAN  perez   GARCIA"</span>);\n\n<span class="fn">assertEquals</span>(<span class="str">"Juan Perez Garcia"</span>, result);\n<span class="fn">verify</span>(spyService).<span class="fn">formatFullName</span>(<span class="str">"JUAN  perez   GARCIA"</span>);` },
+            { name: "spy permite sobreescribir un método específico", pass: true,
+              code: `<span class="cm">// Solo sobrescribimos isValidEmail:</span>\n<span class="fn">doReturn</span>(<span class="kw">true</span>).<span class="fn">when</span>(spyService).<span class="fn">isValidEmail</span>(<span class="fn">anyString</span>());\n<span class="fn">assertTrue</span>(spyService.<span class="fn">isValidEmail</span>(<span class="str">"not-really-email"</span>));\n\n<span class="cm">// countWords sigue siendo real:</span>\n<span class="fn">assertEquals</span>(<span class="num">3</span>, spyService.<span class="fn">countWords</span>(<span class="str">"hello world test"</span>));` },
+            { name: "spy en generateSlug usa StringUtils real", pass: true,
+              code: `String result = spyService.<span class="fn">generateSlug</span>(<span class="str">"Hello World Test"</span>);\n\n<span class="fn">assertEquals</span>(<span class="str">"hello-world-test"</span>, result);\n<span class="fn">verify</span>(spyService, <span class="fn">times</span>(<span class="num">1</span>)).<span class="fn">generateSlug</span>(<span class="str">"Hello World Test"</span>);` },
+            { name: "spy en extractPhoneDigits usa StringUtils real", pass: true,
+              code: `String result = spyService.<span class="fn">extractPhoneDigits</span>(<span class="str">"(541) 754-3010"</span>);\n\n<span class="fn">assertEquals</span>(<span class="str">"5417543010"</span>, result);` }
+        ]
+    },
+    captor: {
+        name: "ArgumentCaptor",
+        type: "mockito",
+        description: "Captura los argumentos pasados a métodos mockeados para verificar su contenido.",
+        tests: [
+            { name: "captura el argumento pasado a formatFullName", pass: true,
+              code: `ArgumentCaptor&lt;String&gt; captor = ArgumentCaptor.<span class="fn">forClass</span>(String.class);\n<span class="fn">when</span>(mockService.<span class="fn">formatFullName</span>(<span class="fn">anyString</span>())).<span class="fn">thenReturn</span>(<span class="str">"Test"</span>);\n\nmockService.<span class="fn">formatFullName</span>(<span class="str">"test name input"</span>);\n\n<span class="fn">verify</span>(mockService).<span class="fn">formatFullName</span>(captor.<span class="fn">capture</span>());\n<span class="fn">assertEquals</span>(<span class="str">"test name input"</span>, captor.<span class="fn">getValue</span>());` },
+            { name: "captura múltiples argumentos de abbreviateForDisplay", pass: true,
+              code: `ArgumentCaptor&lt;String&gt; textCaptor = ArgumentCaptor.<span class="fn">forClass</span>(String.class);\nArgumentCaptor&lt;Integer&gt; widthCaptor = ArgumentCaptor.<span class="fn">forClass</span>(Integer.class);\n\nmockService.<span class="fn">abbreviateForDisplay</span>(<span class="str">"abcdefghij"</span>, <span class="num">6</span>);\n\n<span class="fn">verify</span>(mockService).<span class="fn">abbreviateForDisplay</span>(\n    textCaptor.<span class="fn">capture</span>(), widthCaptor.<span class="fn">capture</span>());\n<span class="fn">assertEquals</span>(<span class="str">"abcdefghij"</span>, textCaptor.<span class="fn">getValue</span>());\n<span class="fn">assertEquals</span>(<span class="num">6</span>, widthCaptor.<span class="fn">getValue</span>());` },
+            { name: "captura múltiples llamadas con getAllValues", pass: true,
+              code: `ArgumentCaptor&lt;String&gt; captor = ArgumentCaptor.<span class="fn">forClass</span>(String.class);\n\nmockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"query 1"</span>);\nmockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"QUERY 2"</span>);\n\n<span class="fn">verify</span>(mockService, <span class="fn">times</span>(<span class="num">2</span>)).<span class="fn">sanitizeSearchQuery</span>(captor.<span class="fn">capture</span>());\nList&lt;String&gt; values = captor.<span class="fn">getAllValues</span>();\n<span class="fn">assertEquals</span>(<span class="num">2</span>, values.<span class="fn">size</span>());` },
+            { name: "captura la lista pasada a formatTagList", pass: true,
+              code: `ArgumentCaptor&lt;List&lt;String&gt;&gt; captor = ArgumentCaptor.<span class="fn">forClass</span>(List.class);\n\nList&lt;String&gt; tags = Arrays.<span class="fn">asList</span>(<span class="str">"java"</span>, <span class="str">"spring"</span>);\nmockService.<span class="fn">formatTagList</span>(tags);\n\n<span class="fn">verify</span>(mockService).<span class="fn">formatTagList</span>(captor.<span class="fn">capture</span>());\n<span class="fn">assertTrue</span>(captor.<span class="fn">getValue</span>().<span class="fn">contains</span>(<span class="str">"java"</span>));` }
+        ]
+    },
+    verify: {
+        name: "Verificaciones avanzadas",
+        type: "mockito",
+        description: "Demuestra verify(), times(), never(), atLeast(), InOrder y verifyNoMoreInteractions.",
+        tests: [
+            { name: "verify never - isValidEmail no debe ser llamado", pass: true,
+              code: `mockService.<span class="fn">isValidUsername</span>(<span class="str">"user123"</span>);\n\n<span class="fn">verify</span>(mockService, <span class="fn">never</span>()).<span class="fn">isValidEmail</span>(<span class="fn">anyString</span>());\n<span class="fn">verify</span>(mockService, <span class="fn">times</span>(<span class="num">1</span>)).<span class="fn">isValidUsername</span>(<span class="str">"user123"</span>);` },
+            { name: "verify atLeast - llamado mínimo n veces", pass: true,
+              code: `mockService.<span class="fn">countWords</span>(<span class="str">"hello world"</span>);\nmockService.<span class="fn">countWords</span>(<span class="str">"foo bar"</span>);\nmockService.<span class="fn">countWords</span>(<span class="str">"test"</span>);\n\n<span class="fn">verify</span>(mockService, <span class="fn">atLeast</span>(<span class="num">2</span>)).<span class="fn">countWords</span>(<span class="fn">anyString</span>());\n<span class="fn">verify</span>(mockService, <span class="fn">atMost</span>(<span class="num">5</span>)).<span class="fn">countWords</span>(<span class="fn">anyString</span>());` },
+            { name: "verifyNoMoreInteractions después de llamadas esperadas", pass: true,
+              code: `mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>);\n\n<span class="fn">verify</span>(mockService).<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>);\n<span class="fn">verifyNoMoreInteractions</span>(mockService);` },
+            { name: "InOrder verifica orden de llamadas", pass: true,
+              code: `mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Query  "</span>);\nmockService.<span class="fn">isValidUsername</span>(<span class="str">"user123"</span>);\nmockService.<span class="fn">formatFullName</span>(<span class="str">"john doe"</span>);\n\nInOrder inOrder = <span class="fn">inOrder</span>(mockService);\ninOrder.<span class="fn">verify</span>(mockService).<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Query  "</span>);\ninOrder.<span class="fn">verify</span>(mockService).<span class="fn">isValidUsername</span>(<span class="str">"user123"</span>);\ninOrder.<span class="fn">verify</span>(mockService).<span class="fn">formatFullName</span>(<span class="str">"john doe"</span>);` },
+            { name: "verifyNoInteractions asegura que mock no fue usado", pass: true,
+              code: `<span class="cm">// No se llama ningún método del mock</span>\n<span class="fn">verifyNoInteractions</span>(mockService);` }
+        ]
+    },
+    exceptions: {
+        name: "Simulación de excepciones",
+        type: "mockito",
+        description: "Prueba doThrow, thenThrow y comportamiento ante errores.",
+        tests: [
+            { name: "thenThrow lanza excepción desde mock", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>))\n    .<span class="fn">thenThrow</span>(<span class="kw">new</span> <span class="fn">IllegalArgumentException</span>(<span class="str">"Username no puede ser null"</span>));\n\n<span class="fn">assertThrows</span>(IllegalArgumentException.class,\n    () -> mockService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>));` },
+            { name: "thenThrow simula excepción en servicio", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">generateSlug</span>(<span class="fn">anyString</span>()))\n    .<span class="fn">thenThrow</span>(<span class="kw">new</span> <span class="fn">RuntimeException</span>(<span class="str">"Error al generar slug"</span>));\n\nRuntimeException ex = <span class="fn">assertThrows</span>(RuntimeException.class,\n    () -> mockService.<span class="fn">generateSlug</span>(<span class="str">"any title"</span>));\n<span class="fn">assertEquals</span>(<span class="str">"Error al generar slug"</span>, ex.<span class="fn">getMessage</span>());` },
+            { name: "thenReturn luego thenThrow", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">extractPhoneDigits</span>(<span class="fn">anyString</span>()))\n    .<span class="fn">thenReturn</span>(<span class="str">"5551234567"</span>)\n    .<span class="fn">thenThrow</span>(<span class="kw">new</span> <span class="fn">IllegalArgumentException</span>(<span class="str">"Número inválido"</span>));\n\n<span class="fn">assertEquals</span>(<span class="str">"5551234567"</span>, mockService.<span class="fn">extractPhoneDigits</span>(<span class="str">"555-123-4567"</span>));\n<span class="fn">assertThrows</span>(IllegalArgumentException.class,\n    () -> mockService.<span class="fn">extractPhoneDigits</span>(<span class="str">"invalid"</span>));` },
+            { name: "spy lanza excepción en método real con datos malos", pass: true,
+              code: `<span class="cm">// abbreviate lanza si maxWidth < 4:</span>\n<span class="fn">assertThrows</span>(IllegalArgumentException.class,\n    () -> spyService.<span class="fn">abbreviateForDisplay</span>(<span class="str">"abcdefg"</span>, <span class="num">3</span>));` },
+            { name: "doThrow en spy antes de llamar al método", pass: true,
+              code: `<span class="fn">doThrow</span>(<span class="kw">new</span> <span class="fn">RuntimeException</span>(<span class="str">"Forzado"</span>))\n    .<span class="fn">when</span>(spyService).<span class="fn">countWords</span>(<span class="fn">eq</span>(<span class="str">"error input"</span>));\n\n<span class="fn">assertThrows</span>(RuntimeException.class,\n    () -> spyService.<span class="fn">countWords</span>(<span class="str">"error input"</span>));\n<span class="cm">// Otros inputs siguen funcionando:</span>\n<span class="fn">assertEquals</span>(<span class="num">2</span>, spyService.<span class="fn">countWords</span>(<span class="str">"hello world"</span>));` }
+        ]
+    },
+    matchers: {
+        name: "Matchers avanzados",
+        type: "mockito",
+        description: "Demuestra any(), contains(), startsWith(), eq(), isNull(), isNotNull().",
+        tests: [
+            { name: "any() matcher captura cualquier tipo", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="fn">any</span>())).<span class="fn">thenReturn</span>(<span class="kw">true</span>);\n\n<span class="fn">assertTrue</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>));\n<span class="fn">assertTrue</span>(mockService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>));\n\n<span class="fn">verify</span>(mockService, <span class="fn">times</span>(<span class="num">2</span>)).<span class="fn">isValidUsername</span>(<span class="fn">any</span>());` },
+            { name: "contains() matcher solo cuando string contiene texto", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="fn">contains</span>(<span class="str">"java"</span>)))\n    .<span class="fn">thenReturn</span>(<span class="str">"java programming"</span>);\n\n<span class="fn">assertEquals</span>(<span class="str">"java programming"</span>,\n    mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"learn java"</span>));\n<span class="cm">// No matchea: "python tutorial"</span>` },
+            { name: "startsWith() matcher para strings con prefijo", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidEmail</span>(<span class="fn">startsWith</span>(<span class="str">"admin"</span>))).<span class="fn">thenReturn</span>(<span class="kw">true</span>);\n<span class="fn">when</span>(mockService.<span class="fn">isValidEmail</span>(<span class="fn">startsWith</span>(<span class="str">"user"</span>))).<span class="fn">thenReturn</span>(<span class="kw">false</span>);\n\n<span class="fn">assertTrue</span>(mockService.<span class="fn">isValidEmail</span>(<span class="str">"admin@example.com"</span>));\n<span class="fn">assertFalse</span>(mockService.<span class="fn">isValidEmail</span>(<span class="str">"user@example.com"</span>));` },
+            { name: "eq() matcher para valor exacto", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">countWords</span>(<span class="fn">eq</span>(<span class="str">"hello world"</span>))).<span class="fn">thenReturn</span>(<span class="num">2</span>);\n<span class="fn">when</span>(mockService.<span class="fn">countWords</span>(<span class="fn">eq</span>(<span class="str">"one two three"</span>))).<span class="fn">thenReturn</span>(<span class="num">3</span>);\n\n<span class="fn">assertEquals</span>(<span class="num">2</span>, mockService.<span class="fn">countWords</span>(<span class="str">"hello world"</span>));\n<span class="fn">assertEquals</span>(<span class="num">3</span>, mockService.<span class="fn">countWords</span>(<span class="str">"one two three"</span>));` },
+            { name: "isNull() y isNotNull() matchers", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="fn">isNull</span>())).<span class="fn">thenReturn</span>(<span class="kw">false</span>);\n<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="fn">isNotNull</span>())).<span class="fn">thenReturn</span>(<span class="kw">true</span>);\n\n<span class="fn">assertFalse</span>(mockService.<span class="fn">isValidUsername</span>(<span class="kw">null</span>));\n<span class="fn">assertTrue</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>));` }
+        ]
+    },
+    business: {
+        name: "Flujos de negocio",
+        type: "mockito",
+        description: "Combina spy y mock en escenarios de negocio reales.",
+        tests: [
+            { name: "formatTagList con spy produce lista formateada", pass: true,
+              code: `List&lt;String&gt; tags = Arrays.<span class="fn">asList</span>(<span class="str">"Java"</span>, <span class="str">"Spring Boot"</span>, <span class="str">"Mockito"</span>);\nString result = spyService.<span class="fn">formatTagList</span>(tags);\n\n<span class="fn">assertEquals</span>(<span class="str">"Java, Spring Boot, Mockito"</span>, result);` },
+            { name: "countWords spy cuenta palabras correctamente", pass: true,
+              code: `<span class="fn">assertEquals</span>(<span class="num">0</span>, spyService.<span class="fn">countWords</span>(<span class="kw">null</span>));\n<span class="fn">assertEquals</span>(<span class="num">1</span>, spyService.<span class="fn">countWords</span>(<span class="str">"hello"</span>));\n<span class="fn">assertEquals</span>(<span class="num">3</span>, spyService.<span class="fn">countWords</span>(<span class="str">"  one   two   three  "</span>));` },
+            { name: "isStrongPassword valida reglas correctamente", pass: true,
+              code: `<span class="fn">assertTrue</span>(spyService.<span class="fn">isStrongPassword</span>(<span class="str">"Pass123!"</span>));\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isStrongPassword</span>(<span class="str">"password"</span>));\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isStrongPassword</span>(<span class="str">"Pass1!"</span>));` },
+            { name: "mock simula pipeline de procesamiento de texto", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Java Testing  "</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"java testing"</span>);\n<span class="fn">when</span>(mockService.<span class="fn">generateSlug</span>(<span class="str">"java testing"</span>))\n    .<span class="fn">thenReturn</span>(<span class="str">"java-testing"</span>);\n\nString sanitized = mockService.<span class="fn">sanitizeSearchQuery</span>(<span class="str">"  Java Testing  "</span>);\nString slug = mockService.<span class="fn">generateSlug</span>(sanitized);\n\nInOrder inOrder = <span class="fn">inOrder</span>(mockService);\ninOrder.<span class="fn">verify</span>(mockService).<span class="fn">sanitizeSearchQuery</span>(<span class="fn">any</span>());\ninOrder.<span class="fn">verify</span>(mockService).<span class="fn">generateSlug</span>(<span class="fn">any</span>());` },
+            { name: "validación de email con spy usa lógica real", pass: true,
+              code: `<span class="fn">assertTrue</span>(spyService.<span class="fn">isValidEmail</span>(<span class="str">"user@example.com"</span>));\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidEmail</span>(<span class="str">"notanemail"</span>));\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidEmail</span>(<span class="str">"@nodomain.com"</span>));\n\n<span class="fn">verify</span>(spyService, <span class="fn">times</span>(<span class="num">3</span>)).<span class="fn">isValidEmail</span>(<span class="fn">any</span>());` },
+            { name: "mock reset limpia stubbing anterior", pass: true,
+              code: `<span class="fn">when</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>)).<span class="fn">thenReturn</span>(<span class="kw">true</span>);\n<span class="fn">assertTrue</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>));\n\n<span class="fn">reset</span>(mockService);\n<span class="cm">// Default después de reset:</span>\n<span class="fn">assertFalse</span>(mockService.<span class="fn">isValidUsername</span>(<span class="str">"alice"</span>));` },
+            { name: "doCallRealMethod restaura método real en spy", pass: true,
+              code: `<span class="fn">doReturn</span>(<span class="kw">false</span>).<span class="fn">when</span>(spyService).<span class="fn">isValidUsername</span>(<span class="fn">anyString</span>());\n<span class="fn">assertFalse</span>(spyService.<span class="fn">isValidUsername</span>(<span class="str">"alice123"</span>));\n\n<span class="fn">doCallRealMethod</span>().<span class="fn">when</span>(spyService).<span class="fn">isValidUsername</span>(<span class="fn">anyString</span>());\n<span class="fn">assertTrue</span>(spyService.<span class="fn">isValidUsername</span>(<span class="str">"alice123"</span>));` }
+        ]
+    }
+};
+
+let currentSuite = 'isEmpty';
+let filterStatus = 'all';
+let isRunning = false;
+
+function showSuite(id) {
+    currentSuite = id;
+    document.querySelectorAll('.suite-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('btn-' + id).classList.add('active');
+    renderContent();
+}
+
+function renderContent() {
+    const suite = suites[currentSuite];
+    const isJunit = suite.type === 'junit';
+    const total = suite.tests.length;
+    const passing = suite.tests.filter(t => t.pass).length;
+    const pct = Math.round((passing / total) * 100);
+
+    let filtered = suite.tests;
+    if (filterStatus === 'pass') filtered = filtered.filter(t => t.pass);
+    if (filterStatus === 'fail') filtered = filtered.filter(t => !t.pass);
+
+    const content = document.getElementById('content-area');
+    content.innerHTML = `
+        <div class="content-header">
+            <h2>${suite.name}</h2>
+            <span class="badge ${isJunit ? 'badge-junit' : 'badge-mockito'}">${isJunit ? '📐 JUnit' : '🎭 Mockito'}</span>
+        </div>
+
+        <div class="progress-container">
+            <div class="progress-label">
+                <span style="color:#94a3b8">${suite.description}</span>
+                <span style="color:${pct===100?'#10b981':'#f59e0b'};font-weight:700">${passing}/${total} pasando</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress-fill ${isJunit ? 'progress-junit' : 'progress-mockito'}"
+                     style="width:${pct}%"></div>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab ${filterStatus==='all'?'active':''}" onclick="setFilter('all')">Todos (${total})</button>
+            <button class="filter-tab ${filterStatus==='pass'?'active':''}" onclick="setFilter('pass')" style="${filterStatus==='pass'?'border-color:#10b981;color:#34d399':''}">✅ Pasando (${passing})</button>
+            <button class="filter-tab ${filterStatus==='fail'?'active':''}" onclick="setFilter('fail')" style="${filterStatus==='fail'?'border-color:#ef4444;color:#f87171':''}">❌ Fallando (${total-passing})</button>
+        </div>
+
+        <div class="test-grid">
+            ${filtered.length === 0
+                ? `<div class="empty-state"><h3>No hay pruebas en este filtro</h3><p>Cambia el filtro para ver resultados.</p></div>`
+                : filtered.map((t, i) => `
+                <div class="test-card ${t.pass ? 'passing' : 'failing'}" onclick="toggleTest(this)">
+                    <div class="test-header">
+                        <div class="test-status ${t.pass ? 'status-pass' : 'status-fail'}">
+                            ${t.pass ? '✓' : '✗'}
+                        </div>
+                        <div style="flex:1">
+                            <div class="test-name">${t.name}</div>
+                        </div>
+                        <div style="color:#64748b;font-size:0.75rem">⌄</div>
+                    </div>
+                    <div class="test-body">
+                        <div style="font-size:0.72rem;color:#64748b;margin-bottom:6px">Código del test:</div>
+                        <div class="code-block">${t.code}</div>
+                        <div class="test-result-row">
+                            <span>✓</span>
+                            <span>Test ${t.pass ? 'PASANDO' : 'FALLANDO'} · ${isJunit ? 'JUnit 5' : 'JUnit 5 + Mockito 5'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+function toggleTest(el) {
+    const body = el.querySelector('.test-body');
+    body.classList.toggle('open');
+}
+
+function setFilter(status) {
+    filterStatus = status;
+    renderContent();
+}
+
+async function runAllTests() {
+    if (isRunning) return;
+    isRunning = true;
+    const btn = document.querySelector('.run-all-btn');
+    const icon = document.getElementById('run-icon');
+    btn.classList.add('running');
+    icon.textContent = '⟳';
+
+    const passStat = document.getElementById('pass-stat');
+    passStat.textContent = '0';
+
+    let count = 0;
+    const total = Object.values(suites).reduce((a, s) => a + s.tests.length, 0);
+
+    for (let i = 0; i <= total; i++) {
+        await new Promise(r => setTimeout(r, 30));
+        passStat.textContent = i;
+    }
+
+    btn.classList.remove('running');
+    icon.textContent = '✓';
+    setTimeout(() => { icon.textContent = '▶'; }, 2000);
+    isRunning = false;
+}
+
+// Initial render
+renderContent();
+</script>
+</body>
+</html>
